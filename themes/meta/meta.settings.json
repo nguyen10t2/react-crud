@@ -1,0 +1,68 @@
+{
+  "name": "meta",
+  "like": "neutral",
+  "mode": "light-only",
+  "settings": [
+    {
+      "thing": "accent",
+      "value": "#0064E0",
+      "source": "dial"
+    },
+    {
+      "thing": "color",
+      "value": "#ffffff",
+      "source": "property",
+      "on": "button",
+      "when": "variant:primary",
+      "mode": "light"
+    },
+    {
+      "thing": "background-color",
+      "value": "transparent",
+      "source": "property",
+      "on": "button",
+      "when": "variant:secondary"
+    },
+    {
+      "thing": "border",
+      "value": "var(--border-width) solid var(--color-accent)",
+      "source": "property",
+      "on": "button",
+      "when": "variant:secondary"
+    },
+    {
+      "thing": "color",
+      "value": "var(--color-text-accent)",
+      "source": "property",
+      "on": "button",
+      "when": "variant:secondary"
+    },
+    {
+      "thing": "color",
+      "value": "#ffffff",
+      "source": "property",
+      "on": "button",
+      "when": "variant:destructive",
+      "mode": "light"
+    },
+    {
+      "thing": "corners",
+      "value": "round",
+      "source": "dial"
+    },
+    {
+      "thing": "font",
+      "value": "system",
+      "source": "dial"
+    },
+    {
+      "thing": "background-color",
+      "value": "var(--color-accent)",
+      "source": "property",
+      "on": "button",
+      "when": "variant:destructive"
+    }
+  ],
+  "lifted": [],
+  "palette": "74b32b03c71499ca4b6cd21649cd2be4a02d88bf4b7065845b2b0e55923cb376"
+}

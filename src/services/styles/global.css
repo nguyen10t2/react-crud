@@ -1,0 +1,5 @@
+/* Astryx component styles — reset first, then the component styles. */
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+
+/* App-level stylesheet. Prefer Astryx component props + tokens over raw CSS. */

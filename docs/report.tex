@@ -1,0 +1,230 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T5]{fontenc}
+  \usepackage[vietnamese]{babel}
+  \usepackage{tgtermes}
+  \usepackage{tgheros}
+\else
+  \usepackage{fontspec}
+  \IfFontExistsTF{Noto Serif}{
+    \setmainfont{Noto Serif}
+  }{
+    \setmainfont{TeX Gyre Termes}
+  }
+  \IfFontExistsTF{Noto Sans}{
+    \setsansfont{Noto Sans}
+  }{
+    \setsansfont{TeX Gyre Heros}
+  }
+  \usepackage[vietnamese]{babel}
+\fi
+
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs,tabularx,array}
+\usepackage[unicode]{hyperref}
+
+\definecolor{MetaBlue}{HTML}{0064E0}
+\definecolor{MetaPale}{HTML}{EEF5FF}
+\definecolor{Ink}{HTML}{1C1E21}
+\definecolor{Muted}{HTML}{5B6573}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=MetaBlue,
+  urlcolor=MetaBlue,
+  pdftitle={Báo cáo bài tập React CRUD},
+  pdfauthor={Nguyễn Hữu Hiệu}
+}
+\urlstyle{same}
+\def\UrlBreaks{\do\/\do-\do.}
+\linespread{1.12}
+\emergencystretch=1.5em
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{3pt}
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\renewcommand{\thesection}{PHẦN \Roman{section}.}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\hyphenation{UserFormDialog SearchForm ResultTable Pagination fetchUsers onChangeKeyword filteredUsers}
+\newcommand{\code}[1]{\textsf{\small #1}}
+\newcommand{\componentbox}[2]{%
+  \fcolorbox{MetaBlue}{MetaPale}{%
+    \parbox[c][2.25cm][t]{3.55cm}{\centering\textbf{#1}\\[0.35em]\small #2}%
+  }%
+}
+
+\begin{document}
+\color{Ink}
+
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+  \centering
+  \vspace*{2.2cm}
+  {\Large\bfseries BÁO CÁO BÀI TẬP\par}
+  \vspace{1.4cm}
+  {\LARGE\bfseries XÂY DỰNG ỨNG DỤNG\\QUẢN LÝ NGƯỜI DÙNG\par}
+  \vspace{0.35cm}
+  {\Large BẰNG REACT VÀ ASTRYX\par}
+  \vspace{0.5cm}
+  {\large Tìm kiếm, thêm, sửa, xóa và phân trang dữ liệu\par}
+  \vspace{2.2cm}
+  \begin{tabular}{rl}
+    \textbf{Sinh viên thực hiện:} & Đào Trọng Nguyên \\
+    \textbf{MSSV:} & 20235390 \\
+    \textbf{Công nghệ:} & React, TypeScript, Vite, Astryx \\
+  \end{tabular}
+  \vfill
+  {\large \today\par}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\pagenumbering{arabic}
+
+\section{Kiến trúc và sơ đồ cây component}
+
+Ứng dụng được tổ chức theo hướng component hóa. \code{App} là component gốc, quản lý trạng thái dùng chung và kết nối các component giao diện. Form thêm/sửa được dùng chung trong \code{UserFormDialog}; bảng và phân trang nhận dữ liệu đã lọc từ \code{App}.
+
+\subsection{Sơ đồ component}
+
+\begin{center}
+\fcolorbox{MetaBlue}{MetaPale}{%
+  \parbox{0.72\textwidth}{\centering
+    \textbf{App (component gốc)}\\
+    \small Quản lý \code{users}, \code{keyword}, \code{page}, trạng thái thêm/sửa và tải dữ liệu
+  }%
+}
+
+\vspace{0.15cm}
+\begin{tabular}{@{}c@{\hspace{0.16cm}}c@{\hspace{0.16cm}}c@{\hspace{0.16cm}}c@{}}
+  \makebox[3.78cm]{$\downarrow$} &
+  \makebox[3.78cm]{$\downarrow$} &
+  \makebox[3.78cm]{$\downarrow$} &
+  \makebox[3.78cm]{$\downarrow$} \\[0.1cm]
+  \componentbox{SearchForm}{Ô tìm kiếm được điều khiển bằng props} &
+  \componentbox{UserFormDialog}{Form thêm/sửa; quản lý giá trị nhập trong dialog} &
+  \componentbox{ResultTable}{Bảng dữ liệu, nút sửa và xóa từng bản ghi} &
+  \componentbox{Pagination}{Điều hướng trang của Astryx Core}
+\end{tabular}
+
+\vspace{0.15cm}
+{\small Hình 1: Cây component của ứng dụng}
+\end{center}
+
+\subsection{Vai trò các thành phần}
+
+\begin{tabularx}{\textwidth}{@{}c L{3.5cm} Y@{}}
+\toprule
+\textbf{STT} & \textbf{Component / module} & \textbf{Vai trò} \\
+\midrule
+1 & \code{App} & Component gốc; giữ state dùng chung, gọi API khi mount, lọc và chia trang dữ liệu; truyền props và callback xuống các component con. \\
+2 & \code{SearchForm} & Nhận từ khóa tìm kiếm và gọi \code{onChangeKeyword} để cập nhật state tại \code{App}. \\
+3 & \code{UserFormDialog} & Form thêm/sửa dùng chung; quản lý các trường nhập, kiểm tra họ tên và tên đăng nhập, xử lý đối tượng \code{address} lồng nhau rồi gửi dữ liệu về \code{App}. \\
+4 & \code{ResultTable} & Hiển thị các bản ghi của trang hiện tại; cung cấp thao tác sửa và xóa; hiển thị dấu gạch ngang cho giá trị trống. \\
+5 & \code{Pagination} & Component Astryx Core hiển thị số trang cùng nút trang trước/trang sau; kích thước trang cố định là 10. \\
+6 & \code{fetchUsers} & Hàm trong \code{src/services/userService.ts}, tải danh sách người dùng từ JSONPlaceholder và kiểm tra phản hồi HTTP. \\
+\bottomrule
+\end{tabularx}
+
+\section{Luồng dữ liệu và cơ chế State Lifting}
+
+\subsection{Luồng dữ liệu}
+
+\begin{tabularx}{\textwidth}{@{}L{3.1cm} c L{3.1cm} Y@{}}
+\toprule
+\textbf{Nguồn} & & \textbf{Đích} & \textbf{Dữ liệu / callback} \\
+\midrule
+\code{SearchForm} & $\rightarrow$ & \code{App} & \code{onChangeKeyword(value)} cập nhật từ khóa; \code{App} đặt lại trang về 1 khi từ khóa đổi. \\
+\code{App} & $\rightarrow$ & \code{ResultTable} & Truyền \code{pageUsers}, tức danh sách đã lọc và cắt theo trang hiện tại. \\
+\code{ResultTable} & $\rightarrow$ & \code{App} & \code{onEdit(user)} mở form sửa; \code{onDelete(id)} xóa bản ghi khỏi state. \\
+\code{App} & $\rightarrow$ & \code{UserFormDialog} & Truyền tiêu đề, trạng thái mở/đóng và \code{initialValues} khi sửa. \\
+\code{UserFormDialog} & $\rightarrow$ & \code{App} & \code{onSubmit(values)} gửi dữ liệu thêm/sửa; \code{onClose()} đóng dialog. \\
+\code{App} & $\leftrightarrow$ & \code{Pagination} & \code{page}, \code{totalItems}, \code{pageSize=10} đi xuống; \code{onChange(page)} cập nhật trang đi lên. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Vì sao state dùng chung được đặt tại \code{App}?}
+
+React truyền dữ liệu từ component cha xuống con qua props. Vì vậy, từ khóa được nhập ở \code{SearchForm} nhưng cần dùng ở \code{App} để lọc dữ liệu trước khi truyền cho \code{ResultTable}. Tương tự, danh sách người dùng và trang hiện tại cần được chia sẻ giữa bảng, form và component phân trang.
+
+\begin{itemize}
+  \item \textbf{State tại \code{App}:} \code{users}, \code{keyword}, \code{page}, \code{editing}, \code{isAddOpen} và \code{isLoading}.
+  \item \textbf{State cục bộ tại form:} \code{UserFormDialog} giữ bản nháp các trường nhập; chỉ gửi dữ liệu lên \code{App} khi người dùng lưu.
+  \item \textbf{Luồng thêm/sửa:} form gọi callback \code{onSubmit}; \code{App} là nơi duy nhất cập nhật mảng \code{users}. Cách này tương đương State Lifting nhưng không cần state trung gian \code{newUser} và effect \code{onAdded} trong tài liệu hướng dẫn mẫu.
+\end{itemize}
+
+\section{Mô tả props giữa các component}
+
+\begin{tabularx}{\textwidth}{@{}L{3.1cm} L{3.5cm} L{3.4cm} Y@{}}
+\toprule
+\textbf{Component nhận} & \textbf{Prop} & \textbf{Kiểu dữ liệu} & \textbf{Vai trò} \\
+\midrule
+\code{SearchForm} & \code{keyword} & \code{string} & Giá trị tìm kiếm hiện tại, được \code{App} truyền xuống. \\
+\code{SearchForm} & \code{onChangeKeyword} & \code{(value: string) => void} & Callback cập nhật từ khóa và đưa trang về đầu danh sách. \\
+\code{ResultTable} & \code{users} & \code{User[]} & Mười bản ghi tối đa thuộc trang hiện tại. \\
+\code{ResultTable} & \code{onEdit} & \code{(user: User) => void} & Chọn bản ghi và mở form sửa. \code{App} sao chép cả đối tượng \code{address} trước khi truyền vào dialog. \\
+\code{ResultTable} & \code{onDelete} & \code{(id: number) => void} & Xóa bản ghi theo ID bằng cách tạo mảng mới với \code{filter}. \\
+\code{UserFormDialog} & \code{title}, \code{isOpen} & \code{string}, \code{boolean} & Xác định nội dung và trạng thái dialog thêm/sửa. \\
+\code{UserFormDialog} & \code{initialValues} & \code{UserFormValues?} & Dữ liệu khởi tạo khi sửa; bỏ trống khi thêm mới. \\
+\code{UserFormDialog} & \code{onClose} & \code{() => void} & Đóng dialog và xóa trạng thái đang sửa khi cần. \\
+\code{UserFormDialog} & \code{onSubmit} & \code{(values: UserFormValues) => void} & Gửi dữ liệu đã kiểm tra về \code{App} để thêm hoặc cập nhật. \\
+\code{Pagination} & \code{page}, \code{onChange} & \code{number}, \code{(page: number) => void} & Điều khiển trang hiện tại theo dạng controlled component. \\
+\bottomrule
+\end{tabularx}
+
+\section{Mô tả chức năng và thuật toán CRUD}
+
+\subsection{Tải dữ liệu và tìm kiếm}
+
+Khi \code{App} mount, \code{useEffect} gọi \code{fetchUsers()} một lần. Hàm dịch vụ gửi yêu cầu GET tới địa chỉ \url{https://jsonplaceholder.typicode.com/users}, kiểm tra \code{response.ok}, sau đó trả về danh sách \code{User[]}. Trong thời gian tải, giao diện hiển thị trạng thái đang tải; lỗi được ghi nhận qua \code{console.error} và trạng thái tải luôn được kết thúc trong \code{finally}.
+
+\code{filteredUsers} được tính bằng \code{useMemo}. Mỗi tên và tên đăng nhập được chuyển về chữ thường rồi so khớp với từ khóa, không phân biệt hoa/thường. Khi từ khóa thay đổi, trang hiện tại được đặt lại về trang đầu để tránh hiển thị một lát cắt rỗng.
+
+\subsection{Thêm, sửa và xóa}
+
+\begin{itemize}
+  \item \textbf{Thêm:} form kiểm tra \code{name} và \code{username}; các trường địa chỉ được cập nhật bằng spread để không làm mất phần còn lại của \code{address}. \code{App} cấp ID bằng ID lớn nhất hiện có cộng 1 và đưa bản ghi mới lên đầu danh sách.
+  \item \textbf{Sửa:} \code{App} tạo bản sao sâu của \code{address} trước khi mở form. Khi lưu, state được thay bằng mảng mới; bản ghi vừa sửa được đưa lên đầu để thể hiện thao tác cập nhật gần nhất.
+  \item \textbf{Xóa:} \code{filter} loại bản ghi có ID được chọn. Không có bước xác nhận, phù hợp với yêu cầu bài tập.
+  \item \textbf{Giá trị thiếu:} tên, username, email và điện thoại rỗng hiển thị \code{—}; địa chỉ chỉ ghép các thành phần có dữ liệu và hiển thị \code{—} nếu toàn bộ địa chỉ trống.
+\end{itemize}
+
+\subsection{Phân trang}
+
+\code{PAGE\_SIZE} được cố định ở mức 10. Số trang tối thiểu là 1 và được tính theo công thức \code{ceil(filteredUsers.length\allowbreak /\allowbreak PAGE\_SIZE)}. \code{pageUsers} lấy lát cắt tương ứng bằng \code{slice}; khi danh sách sau lọc có nhiều hơn 10 bản ghi và đã tải xong, component \code{Pagination} hiển thị các số trang cùng nút trước/sau ở dưới bảng. Khi thêm hoặc sửa, ứng dụng đưa bản ghi mới nhất lên đầu và quay về trang 1. Khi xóa ở trang cuối, trang hiển thị được giới hạn trong phạm vi hợp lệ.
+
+\section{Giao diện, kiểm thử và giới hạn}
+
+\subsection{Giao diện và khả năng đáp ứng}
+
+Giao diện dùng Astryx Core với theme Meta: màu nhấn xanh \#0064E0, font hệ thống có glyph tiếng Việt, nền sáng và các component bo góc. Thanh thông tin đầu trang dùng nền trắng, viền xanh; nút Thêm và Xóa dùng cùng màu xanh. Hai trường bắt buộc có dấu sao đỏ, đồng thời vẫn đặt \code{aria-required} cho hỗ trợ truy cập.
+
+Form sử dụng dialog rộng trên desktop, chia cột cho các trường phù hợp và tự chuyển về một cột khi màn hình hẹp. Bảng co giãn theo độ rộng và cho phép cuộn ngang trên thiết bị nhỏ. Favicon được thay bằng biểu tượng cặp sách xanh.
+
+\subsection{Kiểm thử}
+
+\begin{tabularx}{\textwidth}{@{}L{4.2cm} Y L{2.1cm}@{}}
+\toprule
+\textbf{Kịch bản} & \textbf{Kết quả mong đợi / ghi nhận} & \textbf{Trạng thái} \\
+\midrule
+Tải danh sách & Hiển thị dữ liệu từ JSONPlaceholder; trạng thái tải kết thúc. & Đạt \\
+Tìm theo tên hoặc username & Danh sách lọc theo từ khóa không phân biệt hoa/thường; trang trở về 1. & Đạt \\
+Thêm bản ghi thiếu trường tùy chọn & Bản ghi mới đứng đầu; các ô rỗng hiển thị \code{—}. & Đạt \\
+Phân trang 11 bản ghi & Trang đầu hiển thị 10 bản ghi; trang 2 hiển thị phần còn lại; nút quay lại hoạt động. & Đạt \\
+Build, lint và Astryx doctor & Các lệnh kiểm tra kết thúc thành công. & Đạt \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Giới hạn}
+
+JSONPlaceholder chỉ được dùng để tải dữ liệu ban đầu. Thêm, sửa và xóa hiện cập nhật state trong bộ nhớ của trình duyệt, chưa gửi POST/PUT/DELETE tới API nên dữ liệu thao tác sẽ mất sau khi tải lại trang. API cũng không cung cấp trường thời gian cập nhật; thứ tự gần nhất được duy trì cục bộ bằng cách đưa bản ghi vừa thêm/sửa lên đầu danh sách.
+
+\section*{Kết luận}
+Ứng dụng đáp ứng các mục tiêu chính của bài tập: tổ chức React thành nhiều functional component, quản lý vòng đời bằng \code{useEffect}, điều khiển state bằng \code{useState}, truyền dữ liệu một chiều qua props và thực hiện đầy đủ các thao tác CRUD cùng tìm kiếm. Cơ chế phân trang và hiển thị giá trị thiếu được bổ sung để danh sách dễ sử dụng hơn.
+
+\end{document}
